@@ -8,6 +8,7 @@
 #include "pico/multicore.h"
 #include "pico/unique_id.h"
 #include "hardware/gpio.h"
+#include "hardware/flash.h"
 
 #include "pico/cyw43_arch.h"
 
@@ -27,6 +28,9 @@
 #include "dhcpserver/dhcpserver.h"
 
 #define DEBUG_printf printf
+
+const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
+uint8_t settings_data[FLASH_PAGE_SIZE];
 
 typedef struct TCP_ASERVER_T_ {
     struct tcp_pcb *server_pcb;
@@ -136,6 +140,17 @@ void cgi_ex_init(void)
 }
 
 
+void print_buf(const uint8_t *buf, size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        printf("%02x", buf[i]);
+        if (i % 16 == 15)
+            printf("\n");
+        else
+            printf(" ");
+    }
+}
+
+
 void setBrightness(char *cLevel) {
   iBrightness = atoi(cLevel);
 
@@ -158,6 +173,45 @@ void toggle_color() {
 }
 
 
+void save_settings() {
+  // Check if live settings match data in flash.
+  #ifdef DEBUG
+  printf("Checking Flash Storage...");
+  #endif
+  bool bMismatchDetected = false;
+
+  if (settings_data[ADR_FIXED_R] != flash_target_contents[ADR_FIXED_R]) {
+    bMismatchDetected = true;
+  }
+  else if (settings_data[ADR_FIXED_G] != flash_target_contents[ADR_FIXED_G]) {
+    bMismatchDetected = true;
+  }
+  else if (settings_data[ADR_FIXED_B] != flash_target_contents[ADR_FIXED_B]) {
+    bMismatchDetected = true;
+  }
+
+  // Save Settings if not matching flash.
+  if (bMismatchDetected) {
+    #ifdef DEBUG
+    printf("MISMATCH\nStoring settings...\n");
+    #endif
+    uint32_t ints = save_and_disable_interrupts();
+    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
+    flash_range_program(FLASH_TARGET_OFFSET, settings_data, FLASH_PAGE_SIZE);
+    #ifdef DEBUG
+    printf("Reading Back Data:\n");
+    print_buf(flash_target_contents, FLASH_PAGE_SIZE);
+    #endif
+    restore_interrupts (ints);
+  }
+#ifdef DEBUG
+  else {
+    printf("MATCH\n");
+  }
+#endif
+}
+
+
 void toggleFixedColor(char *cRed, char *cGreen, char *cBlue) {
   #ifdef DEBUG
   printf("Color: ");
@@ -174,6 +228,15 @@ void toggleFixedColor(char *cRed, char *cGreen, char *cBlue) {
   oFixedColor.b = atoi(cBlue);
 
   oSelectedColor = oFixedColor;
+
+  #ifdef DEBUG
+  printf("Saving Fixed Color\n");
+  #endif
+  settings_data[ADR_FIXED_R] = oFixedColor.r;
+  settings_data[ADR_FIXED_G] = oFixedColor.g;
+  settings_data[ADR_FIXED_B] = oFixedColor.b;
+
+  save_settings();
 
   toggle_color();
 }
@@ -363,6 +426,23 @@ void run_server() {
 };
 
 
+void load_settings() {
+  oFixedColor.r = flash_target_contents[ADR_FIXED_R];
+  oFixedColor.g = flash_target_contents[ADR_FIXED_G];
+  oFixedColor.b = flash_target_contents[ADR_FIXED_B];
+
+  #ifdef DEBUG
+  printf("\nFixed R: ");
+  printf("%2d", oFixedColor.r);
+  printf("\nFixed G: ");
+  printf("%2d", oFixedColor.g);
+  printf("\nFixed B: ");
+  printf("%2d", oFixedColor.b);
+  printf("\n");
+  #endif
+}
+
+
 int main() {
     bi_decl(bi_program_description("PicoLamp"));
     bi_decl(bi_1pin_with_name(LED_PIN, "Data-Pin for LED-Stripe."));
@@ -409,6 +489,13 @@ int main() {
     gpio_set_dir(RAINBOW_PIN, GPIO_IN);
     gpio_init(DAYLIGHT_PIN);
     gpio_set_dir(DAYLIGHT_PIN, GPIO_IN);
+
+    // Restore Settings
+#ifdef DEBUG
+    printf("Loading Settings...\n");
+    print_buf(flash_target_contents, FLASH_PAGE_SIZE);
+#endif
+    load_settings();
 
     multicore_launch_core1(core1_entry);
 

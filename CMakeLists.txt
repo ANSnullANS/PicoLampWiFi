@@ -45,6 +45,7 @@ target_link_libraries(PicoLampWiFi
     pico_neopixel
     pico_unique_id
     pico_bootsel_via_double_reset
+    hardware_flash
 )
 
 pico_add_extra_outputs(PicoLampWiFi)

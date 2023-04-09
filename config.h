@@ -23,6 +23,8 @@
 #define LED_PIN 2
 #define NUM_PIXELS 7
 
+#define FLASH_TARGET_OFFSET (2040 * 1024)
+
 #define DAYLIGHT_PIN  15
 #define RAINBOW_PIN  14
 
@@ -54,6 +56,15 @@ struct Color {
   uint8_t r;
   uint8_t g;
   uint8_t b;
+};
+#endif
+
+#ifndef SETTINGS_ADDR
+#define SETTINGS_FLASH_ADDR
+enum FLASH_ADDRESS {
+  ADR_FIXED_R,
+  ADR_FIXED_G,
+  ADR_FIXED_B
 };
 #endif
 
