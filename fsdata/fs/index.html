@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ANSnullANS Lamp Controller</title>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src *; style-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <!--
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    -->
+    <!--<link href="bootstrap.min.css" rel="stylesheet">-->
+    <script src="/bootstrap.bundle.min.js" ></script>
+    <script src="/jquery.min.js"></script>
+</head>
+<body>
+    <script type="text/javascript">
+        sPanelURL = "http://192.168.4.1/";
+        sStatus = "";
+        iMode = 0;
+        iRed = 0;
+        iGreen = 0;
+        iBlue = 0;
+
+        function PlaybackStatus(iMode) {
+            switch(iMode) {
+                case 0:
+                    return "Unknown";
+                    break;
+                case 1:
+                    return "Rainbow";
+                    break;
+                case 2:
+                    return "Fixed";
+                    break;
+                case 3:
+                    return "Status";
+                    break;
+            }
+        }
+
+        function setStatus(sStatus) {
+            document.getElementById("Status").innerText = sStatus;
+        }
+
+        const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => {
+            const hex = x.toString(16)
+            return hex.length === 1 ? '0' + hex : hex
+        }).join('')
+
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        function setBrightness() {
+            vValue = document.getElementById("colorBrightness").value;
+            $.getJSON(sPanelURL + "api?act=bri&v=" + vValue, function (data) {
+                oStatus = data;
+                setStatus("Brightness: " + oStatus["Brightness"]);
+            });
+        }
+
+        function setRainbow() {
+            $.getJSON(sPanelURL + "api?act=rain", function(data) {
+                oStatus = data;
+                setStatus("Mode: " + PlaybackStatus(oStatus["CurrentMode"]));
+
+                document.getElementById("oStatic").classList.replace("btn-primary", "btn-secondary");
+                document.getElementById("oRainbow").classList.replace("btn-secondary", "btn-primary");
+            });
+
+            
+        }
+
+        function updateColor() {
+            vHexColor = document.getElementById("colorPicker").value;
+            vColor = hexToRgb(vHexColor);
+
+            updateURL = sPanelURL + "api?act=fix&r=" + vColor.r + "&g=" + vColor.g + "&b=" + vColor.b;
+            $.getJSON(updateURL, function (data) {
+                oStatus = data;
+                setStatus("Color: {" + oStatus["SelectedColor"]["r"] + "," + oStatus["SelectedColor"]["g"] + "," + oStatus["SelectedColor"]["b"] + "}");
+                document.getElementById("oStatic").classList.replace("btn-secondary", "btn-primary");
+                document.getElementById("oRainbow").classList.replace("btn-primary", "btn-secondary");
+            });
+        }
+
+        function getStatus() {
+            document.getElementById("Status").innerText = "Connecting to " + sPanelURL;
+            sStatus = "";
+
+            $.getJSON(sPanelURL + "stats.json", function(data) {
+                oStatus = data;
+
+                document.getElementById("oUniqueId").innerText = oStatus["UniqueId"]
+
+                iMode = parseInt(oStatus["CurrentMode"]);
+
+                iRed = oStatus["SelectedColor"]["r"];
+                iGreen = oStatus["SelectedColor"]["g"];
+                iBlue = oStatus["SelectedColor"]["b"];
+
+                vColor = "#" + Number(iRed).toString(16).padStart(2, "0") + Number(iGreen).toString(16).padStart(2, "0") + Number(iBlue).toString(16).padStart(2, "0");
+                document.getElementById("colorPicker").value = vColor;
+                document.getElementById("colorBrightness").value = oStatus["Brightness"];
+
+                if(iMode == 0) {
+                    sStatus += "Unknown Mode!\n";
+                }
+                else if (iMode == 1) {
+                    sStatus += "Mode: Rainbow\n";
+                    document.getElementById("oStatic").classList.replace("btn-primary", "btn-secondary");
+                    document.getElementById("oRainbow").classList.replace("btn-secondary", "btn-primary");
+                }
+                else if (iMode == 2) {
+                    sStatus += "Mode: Fixed\n";
+                    sStatus += "R: " + iRed + "\n";
+                    sStatus += "G: " + iGreen + "\n";
+                    sStatus += "B: " + iBlue + "\n";
+                    document.getElementById("oStatic").classList.replace("btn-secondary", "btn-primary");
+                    document.getElementById("oRainbow").classList.replace("btn-primary", "btn-secondary");
+                }
+                else if (iMode == 3) {
+                    sStatus += "Mode: Status\n"
+                }
+                sStatus += "Brightness: " + oStatus["Brightness"];
+                sStatus += "\n";
+                document.getElementById("Status").innerText = sStatus;
+            });
+
+            setTimeout(getStatus, 30000);
+        }
+
+    </script>
+    <h1 style="margin-left: 15px;">ANSnullANS Lamp Controller</h1>
+    <p style="margin-left: 15px;">
+        Lamp ID: <span id="oUniqueId">n.a.</span>
+    </p>
+    <hr />
+    <div class="container-fluid">
+        <button type="button" class="btn btn-primary" id="oRainbow" onclick="setRainbow()">Rainbow</button>
+        <button type="button" class="btn btn-secondary" id="oStatic" onclick="updateColor()">Color</button>
+    </div>
+    <br />
+    <div class="container-fluid">
+        <label for="colorBrightness" class="form-label">Brightness</label>
+        <input type="range" class="form-range" id="colorBrightness" min="0" max="255" step="5" value="150" onchange="setBrightness()">
+    </div>
+    <br />
+    <div class="container-fluid">
+        <label for="colorPicker" class="form-label">Select Color:</label>
+        <input type="color" class="form-control form-control-color" id="colorPicker" value="#000000" title="Choose Color" onchange="updateColor()">
+    </div>
+    <br />
+    <div class="accordion" style="margin: 15px 0px 15px 0px;">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingLog">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLog" aria-expanded="false" aria-controls="collapseLog">
+                    Log
+                </button>
+            </h2>
+            <div id="collapseLog" class="accordion-collapse collapse" aria-labelledby="headingLog" data-bs-parent="#accordionLog">
+                <div class="accordion-body" id="FileList">
+                    <code id="Status" style="color: black;" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function(event) {
+            getStatus();
+        });
+    </script>
+   </body>
+</html>

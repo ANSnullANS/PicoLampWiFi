@@ -1,0 +1,3 @@
+[submodule "3rdparty/pi-pico-adafruit-neopixels"]
+	path = 3rdparty/pi-pico-adafruit-neopixels
+	url = https://github.com/martinkooij/pi-pico-adafruit-neopixels.git
