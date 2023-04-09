@@ -24,7 +24,7 @@
 #define NUM_PIXELS 7
 
 #define DAYLIGHT_PIN  15
-#define PWR_SAVE_PIN  14
+#define RAINBOW_PIN  14
 
 // Buffers
 #define USER_PASS_BUFSIZE 16
@@ -33,15 +33,18 @@
 
 // Timing Variables
 #define STATUS_UPDATE_INTERVAL 5000 // Interval in milliseconds
-#define RAINBOW_UPDATE_INTERVAL 10000 // Interval in milliseconds
+#define RAINBOW_UPDATE_INTERVAL 30000 // Interval in milliseconds
+#define MODE_CHECK_INTERVAL 100 // Interval in milliseconds
 
 #ifndef LED_MODE_ENUM
 #define LED_MODE_ENUM
-enum LED_MODES {
+enum LED_MODE {
   MODE_UNKNOWN,
   MODE_RAINBOW,
   MODE_FIXED,
-  MODE_STATUS
+  MODE_DAYLIGHT,
+  MODE_STATUS,
+  MODE_SET_COLOR
 };
 #endif
 

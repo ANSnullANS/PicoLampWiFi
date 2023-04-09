@@ -44,23 +44,28 @@ char ap_prefix[] = "Lamp_";
 // Status variables
 Color oSelectedColor;
 Color oDaylightColor = { 255, 255, 128 };
+Color oFixedColor = { 0, 0, 0 };
 int iBrightness = 250;
 bool bIsRainbow = true;
 bool bIsDaylight = false;
 bool bSetColor = false;
 bool bNoUpdate = false;
-bool bLightEnabled = true;
-bool bPowerSaveRequested = false;
 
 static mutex_t oLEDUpdateMutex;
 
 // Timing-Variables
 static uint32_t iNow = 0;
 static uint32_t iLastStatusUpdate = 0;
+static uint32_t iLastModeCheck = 0;
 static uint32_t iServerTicks = 0;
 
 Adafruit_NeoPixel oPixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 Rainbow oRainbow;
+LED_MODE eActiveMode;
+LED_MODE ePreviousMode = MODE_UNKNOWN;
+LED_MODE eDetectedMode;
+bool bWiFiOverwrite = false;
+
 
 pico_unique_board_id_t board_id;
 
@@ -88,18 +93,10 @@ u16_t ssi_stats_ssi_handler(int iIndex, char *pcInsert, int iInsertLen) {
       printed = snprintf(pcInsert, iInsertLen, "%s", board_id_hex);
       break;
     case 1: // MODE
-      if(bNoUpdate) {
-        printed = snprintf(pcInsert, iInsertLen, "%d", MODE_STATUS);
-      }
-      else if(bIsRainbow) {
-        printed = snprintf(pcInsert, iInsertLen, "%d", MODE_RAINBOW);
-      }
-      else {
-        printed = snprintf(pcInsert, iInsertLen, "%d", MODE_FIXED);
-      }
+      printed = snprintf(pcInsert, iInsertLen, "%d", eActiveMode);
       break;
     case 2: // COLOR
-      printed = snprintf(pcInsert, iInsertLen, "{ \"r\": %d, \"g\": %d, \"b\": %d }", oSelectedColor.r, oSelectedColor.g, oSelectedColor.b);
+      printed = snprintf(pcInsert, iInsertLen, "{ \"r\": %d, \"g\": %d, \"b\": %d }", oFixedColor.r, oFixedColor.g, oFixedColor.b);
       break;
     case 3: // BRIGHT
       printed = snprintf(pcInsert, iInsertLen, "%d", iBrightness);
@@ -152,9 +149,16 @@ void setBrightness(char *cLevel) {
 }
 
 
-void toggleFixedColor(char *cRed, char *cGreen, char *cBlue) {
-  bNoUpdate = true;
+void toggle_color() {
+  oPixels.clear();
+  for (int i=0; i<=NUM_PIXELS; i++) {
+    oPixels.setPixelColor(i, oPixels.Color(oSelectedColor.r, oSelectedColor.g, oSelectedColor.b));
+  }
+  oPixels.show();
+}
 
+
+void toggleFixedColor(char *cRed, char *cGreen, char *cBlue) {
   #ifdef DEBUG
   printf("Color: ");
   printf(cRed);
@@ -165,12 +169,13 @@ void toggleFixedColor(char *cRed, char *cGreen, char *cBlue) {
   printf("\n");
   #endif
 
-  oSelectedColor.r = atoi(cRed);
-  oSelectedColor.g = atoi(cGreen);
-  oSelectedColor.b = atoi(cBlue);
+  oFixedColor.r = atoi(cRed);
+  oFixedColor.g = atoi(cGreen);
+  oFixedColor.b = atoi(cBlue);
 
-  bSetColor = true;
-  bNoUpdate = false;
+  oSelectedColor = oFixedColor;
+
+  toggle_color();
 }
 
 
@@ -179,22 +184,25 @@ static const char * cgi_handler_basic(int iIndex, int iNumParams, char *pcParam[
   LWIP_ASSERT("check index", iIndex < LWIP_ARRAYSIZE(cgi_handlers));
 
   #ifdef DEBUG
-  printf("Params: ");
+  printf("\nParams: ");
   printf("%d\n", iNumParams);
   #endif
 
  if(!strcmp(pcParam[0], "act")) {
   if(!strcmp(pcValue[0], "rain")) {
-    bSetColor = false;
-    bIsRainbow = true;
+    eActiveMode = MODE_RAINBOW;
   }
   else if(!strcmp(pcValue[0], "bri")) {
     setBrightness(pcValue[1]);
   }
   else if(!strcmp(pcValue[0], "fix")) {
-    bIsRainbow = false;
-    bSetColor = true;
+    eActiveMode = MODE_FIXED;
     toggleFixedColor(pcValue[1], pcValue[2], pcValue[3]);
+  }
+  else if(!strcmp(pcValue[0], "day")) {
+    eActiveMode = MODE_DAYLIGHT;
+    oSelectedColor = oDaylightColor;
+    toggle_color();
   }
   else {
     return "/404.html";
@@ -246,13 +254,39 @@ void sendUpdate() {
 }
 
 
-void setColor(Color oTarget) {
-  oPixels.clear();
-  for (int i=0; i<=NUM_PIXELS; i++) {
-    oPixels.setPixelColor(i, oPixels.Color(oSelectedColor.r, oSelectedColor.g, oSelectedColor.b));
+void checkMode() {
+  bIsDaylight = gpio_get(DAYLIGHT_PIN);
+  bIsRainbow = gpio_get(RAINBOW_PIN);
+  if (!bIsDaylight && !bIsRainbow) {
+    eDetectedMode = MODE_FIXED;
   }
-  oPixels.show();
-  sleep_ms(10);
+  else if(bIsDaylight) {
+    eDetectedMode = MODE_DAYLIGHT;
+  }
+  else if(bIsRainbow) {
+    eDetectedMode = MODE_RAINBOW;
+  }
+
+  if (eDetectedMode != ePreviousMode) {
+    eActiveMode = eDetectedMode;
+    ePreviousMode = eDetectedMode;
+
+    switch(eActiveMode) {
+      case MODE_DAYLIGHT:
+        printf("Toggle Daylight\n");
+        oSelectedColor = oDaylightColor;
+        toggle_color();
+        break;
+      case MODE_FIXED:
+        printf("Toggle Fixed\n");
+        oSelectedColor = oFixedColor;
+        toggle_color();
+        break;
+      case MODE_RAINBOW:
+        printf("Toggle Rainbow\n");
+        break;
+    }
+  }
 }
 
 
@@ -266,6 +300,8 @@ void core1_entry() {
   printf("OK\n");
   sleep_ms(300);
 
+  checkMode();
+
   for(;;) {
     if(bNoUpdate) {
       continue;
@@ -273,7 +309,7 @@ void core1_entry() {
 
     iNow = to_ms_since_boot(get_absolute_time());
 
-    if(bIsRainbow) {
+    if(eActiveMode == MODE_RAINBOW) {
       oRainbow.updateMultiplier(iNow);
 
       oRainbow.calculateValues();
@@ -291,26 +327,10 @@ void core1_entry() {
       }
 
       sleep_ms(10);
-      continue;
     }
-    else if (bSetColor) {
-      oPixels.clear();
-      for (int i=0; i<=NUM_PIXELS; i++) {
-        oPixels.setPixelColor(i, oPixels.Color(oSelectedColor.r, oSelectedColor.g, oSelectedColor.b));
-      }
-      oPixels.show();
-      sleep_ms(10);
-
-      bSetColor = false;
+    else {
+      sleep_ms(300);
     }
-    else if (bIsDaylight) {
-      printf("Toggle Daylight\n");
-      oSelectedColor = oDaylightColor;
-      bSetColor = true;
-      bIsDaylight = false;
-    }
-
-    sleep_ms(300);
   }
 }
 
@@ -331,6 +351,14 @@ void run_server() {
         printf(".");
         iLastStatusUpdate = iServerTicks;
       }
+
+      // Check Switch Position
+      if (iServerTicks >= iLastModeCheck + MODE_CHECK_INTERVAL) {
+        iLastModeCheck = iServerTicks;
+        checkMode();
+      }
+      
+      sleep_ms(10);
   }
 };
 
@@ -377,14 +405,10 @@ int main() {
 #endif
 
     // Configure Pins
-    gpio_init(PWR_SAVE_PIN);
-    gpio_set_dir(PWR_SAVE_PIN, GPIO_IN);
+    gpio_init(RAINBOW_PIN);
+    gpio_set_dir(RAINBOW_PIN, GPIO_IN);
     gpio_init(DAYLIGHT_PIN);
     gpio_set_dir(DAYLIGHT_PIN, GPIO_IN);
-
-    // Check Selected Light-Mode
-    bIsDaylight = gpio_get(DAYLIGHT_PIN);
-    bIsRainbow = !bIsDaylight;
 
     multicore_launch_core1(core1_entry);
 
