@@ -67,3 +67,9 @@ The Rainbow-Colors are not meant to be configurable but if you have to, check "R
 ## Assembly
 
 For the actual pinout, see the variables in 'Configuration' above. If I find some time, I'll add proper schematics later.
+
+## Credits
+
+Thanks to all my friends and supporters, as well as the authors of the following 3rd party libraries used by PicoLampWiFi:
+
+pi-pico-adafruit-neopixels by martinkooij (https://github.com/martinkooij/pi-pico-adafruit-neopixels)
