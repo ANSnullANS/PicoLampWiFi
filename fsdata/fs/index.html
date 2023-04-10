@@ -6,6 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src *; style-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src 'self' data:">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Access-Control-Allow-Origin" content="*" />
+    <link rel="stylesheet" href="style.css">
     <script src="/jquery.min.js"></script>
 </head>
 <body>
@@ -77,14 +78,14 @@
         }
 
         function setDaylight() {
-            $.getJSON(sPanelURL + "api?act=day"), function(data) {
+            $.getJSON(sPanelURL + "api?act=day", function(data) {
                 oStatus = data;
                 setStatus("Mode: " + PlaybackStatus(oStatus["CurrentMode"]));
 
                 document.getElementById("oStatic").classList.replace("btn-primary", "btn-secondary");
                 document.getElementById("oRainbow").classList.replace("btn-primary", "btn-secondary");
                 document.getElementById("oDaylight").classList.replace("btn-secondary", "btn-primary");
-            }
+            });
         }
 
         function updateColor() {
@@ -99,6 +100,17 @@
                 document.getElementById("oRainbow").classList.replace("btn-primary", "btn-secondary");
                 document.getElementById("oDaylight").classList.replace("btn-primary", "btn-secondary");
             });
+        }
+
+        function toggleLog() {
+            if(document.getElementById("ologContent").classList.contains("collapsed")) {
+                document.getElementById("ologContent").classList.remove("collapsed");
+                document.getElementById("oLogExpander").classList.add("collapsed");
+            }
+            else {
+                document.getElementById("ologContent").classList.add("collapsed");
+                document.getElementById("oLogExpander").classList.remove("collapsed");
+            }
         }
 
         function getStatus() {
@@ -156,39 +168,34 @@
         }
 
     </script>
-    <h1 style="margin-left: 15px;">ANSnullANS' PicoLamp Controller</h1>
-    <p style="margin-left: 15px;">
-        Lamp ID: <span id="oUniqueId">n.a.</span>
-    </p>
+    <h1>ANSnullANS' PicoLamp Controller</h1>
+    <p>Lamp ID: <span id="oUniqueId">n.a.</span></p>
     <hr />
-    <div class="container-fluid">
-        <button type="button" class="btn btn-primary" id="oRainbow" onclick="setRainbow()">Rainbow</button>
-        <button type="button" class="btn btn-secondary" id="oStatic" onclick="updateColor()">Color</button>
-        <button type="butoon" class="btn btn-secondary" id="oDaylight" onclick="setDaylight()">Daylight</button>
+    <div class="container">
+        <a href="#" class="btn btn-primary" id="oRainbow" onclick="setRainbow()">Rainbow</a>
+        <a href="#" class="btn btn-secondary" id="oStatic" onclick="updateColor()">Color</a>
+        <a href="#" class="btn btn-secondary" id="oDaylight" onclick="setDaylight()">Daylight</a>
     </div>
     <br />
-    <div class="container-fluid">
-        <label for="colorBrightness" class="form-label">Brightness</label>
-        <input type="range" class="form-range" id="colorBrightness" min="0" max="255" step="5" value="150" onchange="setBrightness()">
+    <div class="container">
+        <span class="form-label">Brightness:</span>
+        <input type="range" class="form-range" id="colorBrightness" min="10" max="255" step="5" value="150" onchange="setBrightness()">
     </div>
     <br />
-    <div class="container-fluid">
-        <label for="colorPicker" class="form-label">Select Color:</label>
-        <input type="color" class="form-control form-control-color" id="colorPicker" value="#000000" title="Choose Color" onchange="updateColor()">
+    <div class="container">
+        <span class="form-label">Select Color:</span>
+        <input type="color" class="form-control-color" id="colorPicker" value="#000000" title="Choose Color" onchange="updateColor()">
     </div>
     <br />
-    <div class="accordion" style="margin: 15px 0px 15px 0px;">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingLog">
-                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseLog" aria-expanded="false" aria-controls="collapseLog">
-                    Log
-                </button>
-            </h2>
-            <div id="collapseLog" class="accordion-collapse collapse" aria-labelledby="headingLog" data-bs-parent="#accordionLog">
-                <div class="accordion-body" id="FileList">
-                    <code id="Status" style="color: black;" />
-                </div>
-            </div>
+    <div class="container">
+        <div class="container-header">
+            <a href="#" onclick="toggleLog()">Log</a>
+        </div>
+        <div id="ologContent" class="container-content collapsed">
+            <code id="Status" style="color: black;" />
+        </div>
+        <div id="oLogExpander" class="container-expander">
+            ...
         </div>
     </div>
 

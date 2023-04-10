@@ -259,13 +259,13 @@ static const char * cgi_handler_basic(int iIndex, int iNumParams, char *pcParam[
     setBrightness(pcValue[1]);
   }
   else if(!strcmp(pcValue[0], "fix")) {
-    eActiveMode = MODE_FIXED;
     toggleFixedColor(pcValue[1], pcValue[2], pcValue[3]);
+    eActiveMode = MODE_FIXED;
   }
   else if(!strcmp(pcValue[0], "day")) {
-    eActiveMode = MODE_DAYLIGHT;
     oSelectedColor = oDaylightColor;
     toggle_color();
+    eActiveMode = MODE_DAYLIGHT;
   }
   else {
     return "/404.html";

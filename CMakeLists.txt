@@ -13,7 +13,21 @@ pico_sdk_init()
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/3rdparty/pi-pico-adafruit-neopixels/pico_neopixels build)
 
 set(FS_DATA_DIR ${CMAKE_CURRENT_LIST_DIR}/fsdata)
-set(MAKE_FS_DATA_SCRIPT /home/paco/Development/pico-sdk/lib/lwip/src/apps/http/makefsdata/makefsdata)
+set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/fsdata/makefsdata)
+
+set(marker ${CMAKE_CURRENT_BINARY_DIR}/.rebuilt)
+add_custom_command(
+  OUTPUT ${marker}
+  COMMAND
+    ${CMAKE_COMMAND} -E touch ${marker}
+)
+add_custom_command(OUTPUT ${FS_DATA_DIR}/fsdata.c
+    COMMAND ${MAKE_FS_DATA_SCRIPT}
+    DEPENDS ${marker}
+    WORKING_DIRECTORY ${FS_DATA_DIR}
+)
+file(REMOVE ${marker})
+
 set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(PicoLampWiFi
