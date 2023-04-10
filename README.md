@@ -72,4 +72,12 @@ For the actual pinout, see the variables in 'Configuration' above. If I find som
 
 Thanks to all my friends and supporters, as well as the authors of the following 3rd party libraries used by PicoLampWiFi:
 
-pi-pico-adafruit-neopixels by martinkooij (https://github.com/martinkooij/pi-pico-adafruit-neopixels)
+- Raspberry Pi Pico-SDK by Raspberry Foundation (https://github.com/raspberrypi/pico-sdk/blob/master/LICENSE.TXT; licensed under BSD 3)
+- pi-pico-adafruit-neopixels by martinkooij (https://github.com/martinkooij/pi-pico-adafruit-neopixels; Original by Adafruit, licensed under LGPL-3.0)
+- jquery by JS Foundation (Released under MIT license: https://jquery.org/license/)
+
+All libraries above have been used as-is without modifications.
+
+## License
+
+All resources created by me for PicoLampWiFi are licensed under MIT license (see https://www.tldrlegal.com/license/mit-license for details). 
