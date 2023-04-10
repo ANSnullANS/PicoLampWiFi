@@ -73,7 +73,8 @@ For the actual pinout, see the variables in 'Configuration' above. If I find som
 Thanks to all my friends and supporters, as well as the authors of the following 3rd party libraries used by PicoLampWiFi:
 
 - Raspberry Pi Pico-SDK by Raspberry Foundation (https://github.com/raspberrypi/pico-sdk/blob/master/LICENSE.TXT; licensed under BSD 3)
-- pi-pico-adafruit-neopixels by martinkooij (https://github.com/martinkooij/pi-pico-adafruit-neopixels; Original by Adafruit, licensed under LGPL-3.0)
+- pi-pico-adafruit-neopixels by martinkooij  (https://github.com/martinkooij/pi-pico-adafruit-neopixels; Original by Adafruit, licensed under LGPL-3.0)
+- dhcpserver by Damien P. George (Part of MicroPython, released under MIT license)
 - jquery by JS Foundation (Released under MIT license: https://jquery.org/license/)
 
 All libraries above have been used as-is without modifications.
