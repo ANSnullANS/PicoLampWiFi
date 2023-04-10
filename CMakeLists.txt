@@ -34,11 +34,14 @@ add_executable(PicoLampWiFi
     PicoLampWiFi.cpp
     Rainbow.cpp
     dhcpserver/dhcpserver.cpp
+    mdns_server.c
+    ${PICO_SDK_PATH}/lib/lwip/src/apps/mdns/mdns.c
 )
 
 target_include_directories(PicoLampWiFi PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_CURRENT_LIST_DIR}/dhcpserver
+        ${PICO_SDK_PATH}/lib/lwip/src/apps/mdns
 )
 
 target_compile_definitions(PicoLampWiFi PRIVATE
@@ -54,6 +57,7 @@ target_link_libraries(PicoLampWiFi
     pico_stdlib
     pico_cyw43_arch_lwip_threadsafe_background
     pico_lwip_http
+    pico_lwip_mdns
     pico_stdlib
     pico_multicore
     pico_neopixel

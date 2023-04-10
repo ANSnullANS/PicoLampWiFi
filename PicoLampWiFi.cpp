@@ -18,6 +18,8 @@
 #include "lwip/def.h"
 #include "lwip/mem.h"
 #include "lwip/apps/httpd.h"
+#include "lwip/apps/mdns.h"
+#include "mdns_server.h"
 
 #include <tusb.h>
 #include "Adafruit_NeoPixel.hpp"
@@ -400,6 +402,10 @@ void core1_entry() {
 
 void run_server() {
   dhcp_server_init(&dhcp_server, &oGateway, &oMask);
+  
+  // Init mDNS
+  mdns_lamp_init();
+
 
   sleep_ms(10);
 
