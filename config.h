@@ -6,7 +6,7 @@
 
 #define VERSION_NO "1.0.0"
 
-#define DEBUG true
+//#define DEBUG true
 //#define DEBUG_RAINBOW true
 
 #ifndef LWIP_HTTPD_EXAMPLE_SIMPLEPOST
@@ -21,7 +21,7 @@
 #define BUF_SIZE 2048
 #define POLL_TIME_S 5
 #define LED_PIN 2
-#define NUM_PIXELS 7
+#define NUM_PIXELS 16
 
 #define FLASH_TARGET_OFFSET (2040 * 1024)
 

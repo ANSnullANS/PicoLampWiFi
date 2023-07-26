@@ -482,12 +482,15 @@ int main() {
     sprintf(ap_password, "%02x%02x%02x%02x", aPasswordCalc[0], aPasswordCalc[0], aPasswordCalc[2], aPasswordCalc[3]);// snprintf("%02x%02x%02x%02x", board_id.id[7], board_id.id[6], board_id.id[5], board_id.id[4])
 
 #ifdef DEBUG
+    sleep_ms(3000);
     // Show WiFi Information on Serial
     printf("SSID: ");
     printf(ap_ssid);
     printf("\nPassword: ");
     printf(ap_password);
     printf("\n\n");
+
+    
 #endif
 
     // Configure Pins
